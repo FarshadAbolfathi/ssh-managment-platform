@@ -149,7 +149,7 @@ const SSHPanelInstaller = () => {
         const interval = setInterval(async () => {
           const statusResponse = await fetch(`http://localhost:4000/api/installation/${installKey}`, {
             headers: {
-              // 'Authorization': `Bearer ${YOUR_AUTH_TOKEN}` // Add this if you have auth
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}` // Add your auth token retrieval logic here
             }
           });
           const statusData = await statusResponse.json();

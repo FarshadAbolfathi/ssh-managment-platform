@@ -329,7 +329,7 @@ app.post('/api/install', async (req, res) => {
 });
 
 // Get Installation Status
-app.get('/api/installation/:installKey', authenticate, async (req, res) => {
+app.get('/api/installation/:installKey', async (req, res) => {
   try {
     const { installKey } = req.params;
     
@@ -337,8 +337,8 @@ app.get('/api/installation/:installKey', authenticate, async (req, res) => {
     
     // Get installation details
     const [installations] = await connection.execute(
-      'SELECT * FROM installations WHERE install_key = ? AND user_id = ?',
-      [installKey, req.user.id]
+      'SELECT * FROM installations WHERE install_key = ?',
+      [installKey]
     );
 
     if (installations.length === 0) {

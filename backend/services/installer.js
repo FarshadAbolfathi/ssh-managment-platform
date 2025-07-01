@@ -27,12 +27,30 @@ class PanelInstaller {
       await this.updateInstallationStatus(installationId, 'installing');
 
       // Connect to server
-      await sshManager.connect(serverData);
-      await this.logStep(installationId, 'Connected to server', 'info', 2);
+      try {
+        await sshManager.connect(serverData);
+        await this.logStep(installationId, 'Connected to server', 'info', 2);
+      } catch (connError) {
+        await this.updateInstallationData(installationId, {
+          status: 'failed',
+          error_message: `SSH connection error: ${connError.message}`
+        });
+        await this.logStep(installationId, `SSH connection error: ${connError.message}`, 'error', 0);
+        throw connError;
+      }
 
       // Execute installation steps
       for (const step of this.installationSteps) {
-        await this.executeStep(step, serverData, panelConfig, installationId, userTier);
+        try {
+          await this.executeStep(step, serverData, panelConfig, installationId, userTier);
+        } catch (stepError) {
+          await this.updateInstallationData(installationId, {
+            status: 'failed',
+            error_message: `Step ${step.name} failed: ${stepError.message}`
+          });
+          await this.logStep(installationId, `Step ${step.name} failed: ${stepError.message}`, 'error', 0);
+          throw stepError;
+        }
       }
 
       // Generate panel URL
@@ -245,29 +263,29 @@ class PanelInstaller {
     files['install.sql'] = this.generateDatabaseSchema();
     
     // User management files
-    files['users.php'] = this.generateUsersPHP(userTier);
-    files['add_user.php'] = this.generateAddUserPHP(userTier);
-    files['delete_user.php'] = this.generateDeleteUserPHP();
+    files['users.php'] = this.generateUsersPHP ? this.generateUsersPHP(userTier) : '';
+    files['add_user.php'] = this.generateAddUserPHP ? this.generateAddUserPHP(userTier) : '';
+    files['delete_user.php'] = this.generateDeleteUserPHP ? this.generateDeleteUserPHP() : '';
     
     // API endpoints
-    files['api.php'] = this.generateAPIPHP(userTier);
+    files['api.php'] = this.generateAPIPHP ? this.generateAPIPHP(userTier) : '';
     
     // Styles and scripts
-    files['style.css'] = this.generateCSS();
-    files['script.js'] = this.generateJavaScript();
+    files['style.css'] = this.generateCSS ? this.generateCSS() : '';
+    files['script.js'] = this.generateJavaScript ? this.generateJavaScript() : '';
     
     // Login system
-    files['login.php'] = this.generateLoginPHP();
-    files['logout.php'] = this.generateLogoutPHP();
+    files['login.php'] = this.generateLoginPHP ? this.generateLoginPHP() : '';
+    files['logout.php'] = this.generateLogoutPHP ? this.generateLogoutPHP() : '';
     
     if (userTier === 'premium' || userTier === 'enterprise') {
-      files['reports.php'] = this.generateReportsPHP();
-      files['settings.php'] = this.generateSettingsPHP();
+      files['reports.php'] = this.generateReportsPHP ? this.generateReportsPHP() : '';
+      files['settings.php'] = this.generateSettingsPHP ? this.generateSettingsPHP() : '';
     }
     
     if (userTier === 'enterprise') {
-      files['multi_server.php'] = this.generateMultiServerPHP();
-      files['api_keys.php'] = this.generateAPIKeysPHP();
+      files['multi_server.php'] = this.generateMultiServerPHP ? this.generateMultiServerPHP() : '';
+      files['api_keys.php'] = this.generateAPIKeysPHP ? this.generateAPIKeysPHP() : '';
     }
     
     return files;
@@ -606,16 +624,15 @@ ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value);`;
     // Create database configuration
     const dbPassword = this.generateRandomPassword(16);
     const configContent = `<?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'ssh_panel');
-define('DB_USER', 'sshpanel');
-define('DB_PASS', '${dbPassword}');
-define('PANEL_TITLE', 'SSH User Management Panel');
-define('PANEL_VERSION', '1.0.0');
-define('USER_TIER', '${userTier}');
-define('MAX_USERS', ${USER_TIERS[userTier].maxUsers});
-define('ADMIN_USERNAME', '${panelUsername}');
-define('ADMIN_PASSWORD', '${await bcrypt.hash(panelPassword, 10)}');
+return [
+  'db_host' => 'localhost',
+  'db_name' => 'ssh_panel',
+  'db_user' => 'sshpanel',
+  'db_pass' => '${dbPassword}',
+  'admin_user' => '${panelUsername}',
+  'admin_pass' => '${await bcrypt.hash(panelPassword, 10)}',
+  'license_key' => ''
+];
 ?>`;
 
     // Write config file
