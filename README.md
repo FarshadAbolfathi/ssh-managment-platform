@@ -2,6 +2,8 @@
 
 This project allows you to install a user management panel on your Linux server with just a few clicks and manage users easily. It consists of a React frontend and a Node.js backend, providing a web-based interface for managing various services and functionalities.
 
+The project is bilingual, supporting both Persian (Farsi) and English languages.
+
 
 ## Technologies Used
 
