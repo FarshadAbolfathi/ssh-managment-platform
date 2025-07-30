@@ -131,7 +131,7 @@ const SSHPanelInstaller = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // 'Authorization': `Bearer ${YOUR_AUTH_TOKEN}` // Add this if you have auth
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({
           serverData: serverData,

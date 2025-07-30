@@ -14,13 +14,19 @@ class SSHManager {
         host: serverIP,
         username: sshUsername,
         password: sshPassword,
-        port: parseInt(sshPort),
+        port: parseInt(sshPort) || 22,
         tryKeyboard: true,
         onKeyboardInteractive: (name, instructions, instructionsLang, prompts, finish) => {
           if (prompts.length > 0 && prompts[0].prompt.toLowerCase().includes('password')) {
             finish([sshPassword]);
           }
         }
+      });
+      
+      // اضافه کردن event listener بعد از اتصال موفق
+      ssh.connection.on('error', (err) => {
+        console.error(`SSH connection error on ${serverIP}:`, err);
+        this.connections.delete(serverIP);
       });
       
       this.connections.set(serverIP, ssh);

@@ -4,7 +4,6 @@ const mysql = require('mysql2/promise');
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
 const { dbConfig, JWT_SECRET, USER_TIERS } = require('./config');
 const sshManager = require('./services/ssh-manager');
 const panelInstaller = require('./services/installer');
@@ -266,11 +265,11 @@ app.post('/api/test-connection', async (req, res) => {
   }
 });
 
-// Start Installation
-app.post('/api/install', async (req, res) => {
+/* Temporarily disable authentication for installation start */
+/* Temporarily disable authentication and tier limit check for installation start */
+app.post('/api/install', /*authenticate, checkTierLimits,*/ async (req, res) => {
   try {
     const { serverData, panelConfig } = req.body;
-    const userId = 1; // Mock user ID for now
     
     // Validate input
     if (!serverData.serverIP || !serverData.sshUsername || !serverData.sshPassword) {
@@ -289,7 +288,7 @@ app.post('/api/install', async (req, res) => {
       `INSERT INTO installations (user_id, server_ip, server_name, ssh_port, panel_path, 
        panel_username, install_key, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
-        userId,
+        req.user ? req.user.id : null,
         serverData.serverIP,
         serverData.serverName || `Server ${serverData.serverIP}`,
         serverData.sshPort || 22,
@@ -311,7 +310,7 @@ app.post('/api/install', async (req, res) => {
     };
 
     // Run installation asynchronously
-    panelInstaller.install(installationData, 'free') // Mock tier for now
+    panelInstaller.install(installationData, req.user ? req.user.tier : 'free')
       .catch(error => {
         console.error('Installation error:', error);
       });
