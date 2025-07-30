@@ -41,7 +41,7 @@ if (isset($_GET['generate_hash']) && isset($_GET['pass'])) {
 <head>
     <meta charset="UTF-8" />
     <title>Login - SSH Panel</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style-new.css" />
 </head>
 <body>
     <div class="login-container">
